@@ -5,10 +5,12 @@ from PIL import Image,ImageTk
 # from tkinter import messagebox
 import random
 
+#最初のスタートボタンにカーソルが入ったときの処理
 def bt_enter(event):
     photos.canvas.itemconfig(photo_id1,image= img_bt2)
     root.config(cursor = "hand2")
 
+#最初のスタートボタンからカーソルが出たときの処理
 def bt_leave(event):
     photos.canvas.itemconfig(photo_id1,image= img_bt1)
     root.config(cursor = "arrow")
@@ -27,10 +29,12 @@ def hard():
 def veryhard():
     files.difficulty(data4)
 
+#選択画面の描写
 def select():
     windows.destroy()
     windows.frame()
     windows.select_window()
+#選択画面で戻るを選択したときの処理
 def back():
     windows.destroy()
     windows.frame()
@@ -40,8 +44,10 @@ def back():
 class Files:
     def __init__(self):
         #一回で何問出すか
-        self.quiz_num  =5
+        self.quiz_num  = 10
+        #一周のうちに間違えたかどうかを保存（間違えていなければリザルトのボタンが出ない）
         self.isWrong = False
+        #間違った問題の数を保存
         self.wrong_num = 0
         #リザルト画面で次の問題番号を保持
         self.next_num = 0
@@ -54,13 +60,15 @@ class Files:
         self.shuffle(data)
         self.show_quiz()
 
+    #jsonファイルを読み込んで問題順、選択肢をランダムにする
     def shuffle(self,data): 
-        #間違えた問題があるか判定 
+        #初期化
         self.isWrong = False
         #間違った問題の配列をリセット
         self.wrong_array = []
         #wrong_arrayの配列番号を保持
         self.wrong_num = 0
+
         random.shuffle(data)
         self.quiz_array = data
         length = len(data)
@@ -75,6 +83,7 @@ class Files:
         #正解数を保存
         self.correct = 0
 
+    #問題画面でクイズと選択肢を表示する
     def show_quiz(self):
         if self.count < self.quiz_num:
 
@@ -89,30 +98,32 @@ class Files:
             #結果を表示(Windowクラスに移動)
             windows.result(self.correct,self.quiz_num)
     
+    def reset_next_num(self,num):
+        self.next_num = 0
+        self.show_result(num)
+        
     #回答後のリザルト表示、numは問題を一つ後or一つ前に切り替えるために使う
     def show_result(self,num):
         quiz_num = 0
         select_num = 0
         ans_num = 0
         #次の問題（前へor次へを押したときの問題番号）
-        self.next_num = self.wrong_array[self.wrong_num][0] + num
-        print(self.next_num)
-        if 0 <=  self.next_num and self.next_num < len(self.wrong_array):
-            if num >= 0:
-                self.wrong_num += 1
-            elif num < 0:
-                self.wrong_num -= 1        
-           
-        elif  self.next_num < 0:
-            self.wrong_num = len(self.wrong_array) - 1
+        self.next_num += num
+
+        print(self.wrong_array)
+        if  self.next_num < 0:
+            self.next_num = len(self.wrong_array) - 1
+            print("a")
 
         elif self.next_num >= len(self.wrong_array):
-            self.wrong_num = 0
+            self.next_num = 0
+            print("b")
         #quiz_num = 問題番号、select_num = 選んだ選択肢、ans_num = 正解の選択肢
-        quiz_num = self.wrong_array[self.wrong_num][0]
-        select_num = self.wrong_array[self.wrong_num][1]
-        ans_num =  self.wrong_array[self.wrong_num][2]
-        
+        quiz_num = self.wrong_array[self.next_num][0]
+        select_num = self.wrong_array[self.next_num][1]
+        ans_num =  self.wrong_array[self.next_num][2]
+        print(quiz_num)
+
         for i in range(4):
             #選択肢表示
             windows.lbs[i].config(text= self.data_array[quiz_num][i],bg = "#FFFFFF")
@@ -120,7 +131,6 @@ class Files:
                 windows.lbs[select_num].config(bg = "#FF0000")
                 
             if i == ans_num:
-
                 windows.lbs[ans_num].config(bg = "#00FF00")
                 #問題文表示
         photos.canvas.itemconfig(windows.lb_quiz,text= self.quiz_array[quiz_num]["Q"])
@@ -141,6 +151,7 @@ class Files:
             #一度でも間違えればフラグ発動（結果画面でボタンを表示させるため）
             self.isWrong = True
             
+            
             windows.buttons[num].config(bg = "#FF0000")
             
             #for button in windows.buttons:でも良いが正解のボタン番号が欲しいのでi in range を使う
@@ -154,6 +165,9 @@ class Files:
 
                     #保存した問題を配列に入れる（[[問題番号,選択した番号],[問題番号,選択した番号],....]の2次元配列になるイメージ）
                     self.wrong_array.append(wrong_num)
+            #
+            self.next_num = self.wrong_array[0][0]
+
             windows.roots.after(1000, self.next_question)
 
             #ボタン操作で次の問題に進みたいなら↓の３行、時間経過で次の問題に進むなら↑の１行
@@ -162,19 +176,25 @@ class Files:
     # def press(self,event):
     #         windows.roots.after(1000, self.next_question)
 
+    #2問目、3問目...と、次の問題を呼び出す
     def next_question(self):
         self.count += 1
         self.show_quiz()
 
+#画面生成に関する様々な機能を管理
 class Window:
+    #一番最初に呼び出される
     def __init__(self,roots):
         self.roots = roots  
+    #tkinterのframeを破壊
     def destroy(self):
         self.new_frame.destroy()
+    #tkinterのframeを作成
     def frame(self):
         self.new_frame = tk.Frame(self.roots, width=500,height=500)
         self.new_frame.place(x=0,y=0)
 
+    #難易度選択画面のUIを作成
     def select_window(self):
         photos.make_photo(windows.new_frame,"bg_select.png",500,500)
 
@@ -189,7 +209,8 @@ class Window:
 
         bt_back = tk.Button(self.new_frame,text="戻る",height=2,width=5,font = ("MSゴシック","20"),command=back,cursor = "hand2")
         bt_back.place(x = 20,y = 20)
-
+    
+    #クイズ画面のUIを作成
     def quiz_window(self,frame):
         photos.make_photo(frame,"bg.png",500,500)
         #wraplengthでボタンに表示されるテキストの長さを制限（自動で改行）
@@ -210,6 +231,7 @@ class Window:
         #問題文を表示、widthの値は一行にどれくらいの長さの文字（文字数ではなく文字列全体の長さ）まで入れられるか（超えると次の行が生まれる）
         self.lb_quiz = photos.canvas.create_text(230,80,text="問題",fill = "#000000",font = ("MSゴシック","15","bold"),anchor=tk.CENTER,width=400)
 
+    #間違えた問題を見返すときの画面を作成
     def result_window(self,frame):
         photos.make_photo(frame,"bg.png",500,500)
         #wraplengthでボタンに表示されるテキストの長さを制限（自動で改行）
@@ -230,6 +252,7 @@ class Window:
         #問題文を表示、widthの値は一行にどれくらいの長さの文字（文字数ではなく文字列全体の長さ）まで入れられるか（超えると次の行が生まれる）
         self.lb_result = photos.canvas.create_text(230,80,text="問題",fill = "#000000",font = ("MSゴシック","15","bold"),anchor=tk.CENTER,width=400)
 
+    #スタート画面を作成
     def start_window(self):
         #画像読み込み
         photos.make_photo(windows.new_frame,"bg_title.png",500,500)
@@ -240,14 +263,15 @@ class Window:
         photo_id1 = photos.canvas.create_image(200,300,image = img_bt1, anchor=tk.NW)
 
         text_id = photos.canvas.create_text(250,325,text = "スタート",font = ("MSゴシック","20"))
-
+        #スタートボタンと”スタート”の文字にカーソルが合うと処理が発生（tkinterのボタン機能ではなく、画像と文字をcanvasに貼り付けているため、2種類ずつ必要になる）
         photos.canvas.tag_bind(photo_id1,"<Enter>",bt_enter)
         photos.canvas.tag_bind(photo_id1,"<Leave>",bt_leave)
         photos.canvas.tag_bind(photo_id1,"<Button-1>",bt_click)
         photos.canvas.tag_bind(text_id,"<Enter>",bt_enter)
         photos.canvas.tag_bind(text_id,"<Leave>",bt_leave)
         photos.canvas.tag_bind(text_id,"<Button-1>",bt_click)
-
+   
+    #リザルトを表示する画面を作成
     def result(self,correct, whole):
         photos.make_photo(windows.new_frame,"bg_result.png",500,500) 
         
@@ -277,12 +301,12 @@ class Window:
 
         self.result_window(review_window)
        
-        files.show_result(0)
+        files.reset_next_num(0)
 
         bt_prev = tk.Button(review_window,text="前へ",bg= "#FFFEE4",width=10,height=2,font = ("MSゴシック","10"),command=lambda:files.show_result(-1),cursor = "hand2")
-        bt_prev.place(x = 10,y = 20)
+        bt_prev.place(x = 10,y = 0)
         bt_next = tk.Button(review_window,text="次へ",bg= "#FFFEE4",width=10,height=2,font = ("MSゴシック","10"),command=lambda:files.show_result(1),cursor = "hand2")
-        bt_next.place(x = 420,y = 20)
+        bt_next.place(x = 420,y = 0)
         
 class Photo:
     def __init__(self):
